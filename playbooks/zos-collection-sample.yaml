@@ -23,14 +23,14 @@
   environment: "{{ environment_vars }}"
 
   tasks:
-    # Ping the host
-    - name: Ping host - {{ inventory_hostname }}
-      ping:
-      register: result
+    # # Ping the host
+    # - name: Ping host - {{ inventory_hostname }}
+    #   ping:
+    #   register: result
 
-    - name: Response
-      debug:
-        msg: "Ping result returned: {{ result.ping }}"
+    # - name: Response
+    #   debug:
+    #     msg: "Ping result returned: {{ result.ping }}"
 
     - name: Ensure JCL folder exists to hold JCL
       file:
@@ -50,6 +50,7 @@
     - name: Query submitted job 'HELLO'
       zos_job_query:
         job_name: HELLO
+        # owner: OMVSADM
       register: result
 
     - name: Response
@@ -71,9 +72,9 @@
         state: absent
 
     # Create a data set
-    - name: Create a PDS data set 'USER.PRIVATE.TEST'
+    - name: Create a PDS data set 'ANSIBLE.PRIVATE.TEST'
       zos_data_set:
-        name: USER.PRIVATE.TEST
+        name: ANSIBLE.PRIVATE.TEST
         type: pds
         size: 5M
         format: fb
@@ -83,24 +84,24 @@
 
     - name: Response
       debug:
-        msg: "Create a PDS data set 'USER.PRIVATE.TEST' result: {{ result }}"
+        msg: "Create a PDS data set 'ANSIBLE.PRIVATE.TEST' result: {{ result }}"
 
     # Validate data set Created
-    - name: Check for data set 'USER.PRIVATE.TEST'
-      command: "dls USER.PRIVATE.TEST"
+    - name: Check for data set 'ANSIBLE.PRIVATE.TEST'
+      command: "dls ANSIBLE.PRIVATE.TEST"
       register: result
       changed_when: true
 
     - name: Response
       debug:
-        msg: "Check for data set 'USER.PRIVATE.TEST' returned {{ result }}"
+        msg: "Check for data set 'ANSIBLE.PRIVATE.TEST' returned {{ result }}"
 
     # Delete data set
-    - name: Delete data set 'USER.PRIVATE.TEST'
+    - name: Delete data set 'ANSIBLE.PRIVATE.TEST'
       zos_data_set:
-        name: USER.PRIVATE.TEST
+        name: ANSIBLE.PRIVATE.TEST
         state: absent
       register: result
     - name: Response
       debug:
-        msg: "Delete data set 'USER.PRIVATE.TEST' returned: {{ result }}"
+        msg: "Delete data set 'ANSIBLE.PRIVATE.TEST' returned: {{ result }}"
