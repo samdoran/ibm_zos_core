@@ -19,9 +19,8 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 import os
 import shutil
 import tempfile
-import pprint
+from pprint import pprint
 
-pp = pprint.PrettyPrinter(indent=4)
 from tempfile import mkstemp
 
 __metaclass__ = type
@@ -80,11 +79,12 @@ def test_copy_local_file_to_non_existing_uss_file(ansible_zos_module):
     dest_path = "/tmp/profile"
     try:
         hosts.all.file(path=dest_path, state="absent")
-        pp.pprint(hosts)
+        pprint(hosts)
         copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path)
-        pp.pprint(hosts)
+        pprint(hosts)
         stat_res = hosts.all.stat(path=dest_path)
         for result in copy_res.contacted.values():
+            pprint(result)
             assert result.get("msg") is None
         for result in stat_res.contacted.values():
             assert result.get("stat").get("exists") is True
