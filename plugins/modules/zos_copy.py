@@ -1758,7 +1758,7 @@ def main():
         sftp_port=dict(arg_type="int", required=False),
         volume=dict(arg_type="str", required=False),
     )
-    pprint(module.params)
+    pprint(module.params)  # local_charset and encoding.from are already messed up here.
     if (
         not module.params.get("encoding")
         and not module.params.get("remote_src")
