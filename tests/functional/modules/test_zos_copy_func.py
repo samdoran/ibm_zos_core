@@ -19,7 +19,6 @@ from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
 import os
 import shutil
 import tempfile
-from pprint import pprint
 
 from tempfile import mkstemp
 
@@ -79,9 +78,7 @@ def test_copy_local_file_to_non_existing_uss_file(ansible_zos_module):
     dest_path = "/tmp/profile"
     try:
         hosts.all.file(path=dest_path, state="absent")
-        pprint(hosts)
         copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path)
-        pprint(hosts)
         stat_res = hosts.all.stat(path=dest_path)
         for result in copy_res.contacted.values():
             pprint(result)
