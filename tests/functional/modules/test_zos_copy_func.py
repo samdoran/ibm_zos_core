@@ -13,12 +13,15 @@
 
 from __future__ import absolute_import, division, print_function
 from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.data_set import (
-    extract_member_name
+    extract_member_name,
 )
 
 import os
 import shutil
 import tempfile
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 from tempfile import mkstemp
 
 __metaclass__ = type
@@ -77,7 +80,9 @@ def test_copy_local_file_to_non_existing_uss_file(ansible_zos_module):
     dest_path = "/tmp/profile"
     try:
         hosts.all.file(path=dest_path, state="absent")
+        pp.pprint(hosts.params)
         copy_res = hosts.all.zos_copy(src="/etc/profile", dest=dest_path)
+        pp.pprint(hosts.params)
         stat_res = hosts.all.stat(path=dest_path)
         for result in copy_res.contacted.values():
             assert result.get("msg") is None
@@ -320,7 +325,7 @@ def test_copy_local_file_to_pds_member_binary(ansible_zos_module):
     dest = "USER.TEST.PDS.FUNCTEST"
     dest_path = "USER.TEST.PDS.FUNCTEST(DATA)"
     fd, src_file = mkstemp()
-    with open(src_file, 'w') as infile:
+    with open(src_file, "w") as infile:
         infile.write(DUMMY_DATA)
 
     try:
@@ -353,7 +358,7 @@ def test_copy_local_file_to_pdse_member_binary(ansible_zos_module):
     dest = "USER.TEST.PDS.FUNCTEST"
     dest_path = "USER.TEST.PDS.FUNCTEST(DATA)"
     fd, src_file = mkstemp()
-    with open(src_file, 'w') as infile:
+    with open(src_file, "w") as infile:
         infile.write(DUMMY_DATA)
     try:
         hosts.all.zos_data_set(
@@ -2024,7 +2029,7 @@ def test_copy_multiple_data_set_members(ansible_zos_module):
             assert v_cp.get("rc") == 0
             stdout = v_cp.get("stdout")
             assert stdout is not None
-            assert(len(stdout.splitlines())) == 2
+            assert (len(stdout.splitlines())) == 2
 
     finally:
         hosts.all.zos_data_set(name=dest, state="absent")
@@ -2036,23 +2041,20 @@ def test_copy_pds_to_volume(ansible_zos_module):
     remote_pds = "USER.TEST.FUNCTEST.PDS"
     dest_pds = "USER.TEST.FUNCTEST.DEST"
     try:
-        hosts.all.zos_data_set(name=remote_pds, type='pds', state='present')
+        hosts.all.zos_data_set(name=remote_pds, type="pds", state="present")
         copy_res = hosts.all.zos_copy(
-            src=remote_pds,
-            dest=dest_pds,
-            remote_src=True,
-            volume='000000'
+            src=remote_pds, dest=dest_pds, remote_src=True, volume="000000"
         )
         for cp in copy_res.contacted.values():
-            assert cp.get('msg') is None
+            assert cp.get("msg") is None
 
         check_vol = hosts.all.shell(
             cmd="tsocmd \"LISTDS '{0}'\"".format(dest_pds),
             executable=SHELL_EXECUTABLE,
         )
         for cv in check_vol.contacted.values():
-            assert cv.get('rc') == 0
-            assert "000000" in cv.get('stdout')
+            assert cv.get("rc") == 0
+            assert "000000" in cv.get("stdout")
     finally:
-        hosts.all.zos_data_set(name=remote_pds, state='absent')
-        hosts.all.zos_data_set(name=dest_pds, state='absent')
+        hosts.all.zos_data_set(name=remote_pds, state="absent")
+        hosts.all.zos_data_set(name=dest_pds, state="absent")
