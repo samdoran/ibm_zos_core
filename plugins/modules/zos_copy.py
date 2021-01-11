@@ -1758,8 +1758,6 @@ def main():
         sftp_port=dict(arg_type="int", required=False),
         volume=dict(arg_type="str", required=False),
     )
-    print("before")
-    pprint(module.params)  # local_charset and encoding.from are already messed up here.
     if (
         not module.params.get("encoding")
         and not module.params.get("remote_src")
@@ -1769,7 +1767,6 @@ def main():
             "from": module.params.get("local_charset"),
             "to": encode.Defaults.get_default_system_charset(),
         }
-    pprint(module.params)
 
     if module.params.get("encoding"):
         module.params.update(
@@ -1784,7 +1781,6 @@ def main():
                 to_encoding=dict(arg_type="encoding"),
             )
         )
-    pprint(module.params)
 
     res_args = temp_path = conv_path = None
     try:
