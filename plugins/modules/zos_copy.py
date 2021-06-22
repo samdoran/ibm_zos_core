@@ -13,6 +13,29 @@
 # limitations under the License.
 
 from __future__ import absolute_import, division, print_function
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
+    MissingZOAUImport,
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
+    idcams, iebcopy, ikjeft01
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
+    better_arg_parser, data_set, encode, vtoc, backup, copy
+)
+from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
+    AnsibleModuleHelper,
+)
+from ansible.module_utils._text import to_bytes
+from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.six import PY3
+from re import IGNORECASE
+from hashlib import sha256
+import glob
+import shutil
+import stat
+import math
+import tempfile
+import os
 
 __metaclass__ = type
 
@@ -504,35 +527,6 @@ cmd:
     sample: REPRO INDATASET(SAMPLE.DATA.SET) OUTDATASET(SAMPLE.DEST.DATA.SET)
 """
 
-import os
-import tempfile
-import math
-import stat
-import shutil
-import glob
-
-from hashlib import sha256
-from re import IGNORECASE
-from ansible.module_utils.six import PY3
-
-from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils._text import to_bytes
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.ansible_module import (
-    AnsibleModuleHelper,
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils import (
-    better_arg_parser, data_set, encode, vtoc, backup, copy
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.mvs_cmd import (
-    idcams, iebcopy, ikjeft01
-)
-
-from ansible_collections.ibm.ibm_zos_core.plugins.module_utils.import_handler import (
-    MissingZOAUImport,
-)
 
 if PY3:
     from re import fullmatch
@@ -610,6 +604,10 @@ class CopyHandler(object):
             src_ds_type {str} -- The type of source
             alloc_vol {str} -- The volume where destination should be allocated
         """
+        # **Here: what's coming in, to verify the call path
+        print("Src: {0}.\ntemp_path: {1}.\nconv_path: {2}.\ndest: {3}.\nsrc_ds_type: {4}.\nmodel: {5}.\nalloc: {6}.\m"
+              .format(src, temp_path or "Notmp", conv_path or "Nocnv", dest, src_ds_type, model_ds or "Nomodel", alloc_vol or "Novolume"))
+
         new_src = temp_path or conv_path or src
         if model_ds:
             if self.dest_exists:
@@ -642,7 +640,8 @@ class CopyHandler(object):
                 response = datasets._copy(new_src, dest)
                 if response.rc != 0:
                     self.fail_json(
-                        msg="Unable to copy source {0} to {1}".format(new_src, dest),
+                        msg="Unable to copy source {0} to {1}".format(
+                            new_src, dest),
                         rc=response.rc,
                         stdout=response.stdout_response,
                         stderr=response.stderr_response
@@ -661,7 +660,8 @@ class CopyHandler(object):
             response = datasets._delete(dest)
             if response.rc != 0:
                 self.fail_json(
-                    msg="Unable to delete destination data set {0}".format(dest),
+                    msg="Unable to delete destination data set {0}".format(
+                        dest),
                     rc=response.rc,
                     stdout=response.stdout_response,
                     stderr=response.stderr_response
@@ -713,7 +713,8 @@ class CopyHandler(object):
                         temp_path, os.path.basename(os.path.dirname(src))
                     )
                 else:
-                    new_src = "{0}/{1}".format(temp_path, os.path.basename(src))
+                    new_src = "{0}/{1}".format(temp_path,
+                                               os.path.basename(src))
             try:
                 if not temp_path:
                     temp_dir = tempfile.mkdtemp()
@@ -828,7 +829,8 @@ class CopyHandler(object):
                              (Default {False})
 
         """
-        tag_cmd = "chtag -{0}c {1} {2}".format("R" if is_dir else "t", tag, file_path)
+        tag_cmd = "chtag -{0}c {1} {2}".format(
+            "R" if is_dir else "t", tag, file_path)
         rc, out, err = self.run_command(tag_cmd)
         if rc != 0:
             self.fail_json(
@@ -965,7 +967,8 @@ class USSCopyHandler(CopyHandler):
             {str} -- Destination where the file was copied to
         """
         if os.path.isdir(dest):
-            dest = os.path.join(dest, os.path.basename(src) if src else "inline_copy")
+            dest = os.path.join(dest, os.path.basename(src)
+                                if src else "inline_copy")
 
         new_src = temp_path or conv_path or src
         try:
@@ -1003,7 +1006,8 @@ class USSCopyHandler(CopyHandler):
                 shutil.rmtree(dest_dir)
             except Exception as err:
                 self.fail_json(
-                    msg="Unable to delete pre-existing directory {0}".format(dest_dir),
+                    msg="Unable to delete pre-existing directory {0}".format(
+                        dest_dir),
                     stdout=str(err),
                 )
         try:
@@ -1051,7 +1055,8 @@ class USSCopyHandler(CopyHandler):
                 response = datasets._copy(src, dest)
                 if response.rc != 0:
                     self.fail_json(
-                        msg="Error while copying source {0} to {1}".format(src, dest),
+                        msg="Error while copying source {0} to {1}".format(
+                            src, dest),
                         rc=response.rc,
                         stdout=response.stdout_response,
                         stderr=response.stderr_response
@@ -1224,9 +1229,11 @@ class PDSECopyHandler(CopyHandler):
         if rc != 0:
             msg = ""
             if is_uss_src:
-                msg = "Unable to copy file {0} to data set member {1}".format(src, dest)
+                msg = "Unable to copy file {0} to data set member {1}".format(
+                    src, dest)
             else:
-                msg = "Unable to copy data set member {0} to {1}".format(src, dest)
+                msg = "Unable to copy data set member {0} to {1}".format(
+                    src, dest)
 
             # *****************************************************************
             # An error occurs while attempting to write a data set member to a
@@ -1289,7 +1296,8 @@ class PDSECopyHandler(CopyHandler):
                 path, dirs, files = next(os.walk(src))
                 if dirs:
                     self.fail_json(
-                        msg="Subdirectory found in source directory {0}".format(src)
+                        msg="Subdirectory found in source directory {0}".format(
+                            src)
                     )
                 size = sum(os.stat(path + "/" + f).st_size for f in files)
                 rc = self._allocate_pdse(dest_name, size=size)
@@ -1297,7 +1305,8 @@ class PDSECopyHandler(CopyHandler):
             rc = self._allocate_pdse(dest_name, size=size, model_ds=model_ds)
         if rc != 0:
             self.fail_json(
-                msg="Unable to allocate destination data set to copy {0}".format(src),
+                msg="Unable to allocate destination data set to copy {0}".format(
+                    src),
                 stdout=out,
                 stderr=err,
                 rc=rc,
@@ -1338,8 +1347,10 @@ class PDSECopyHandler(CopyHandler):
             if not alloc_size:
                 if src_vol:
                     vtoc_info = vtoc.get_data_set_entry(src, src_vol)
-                    tracks = int(vtoc_info.get("last_block_pointer").get("track"))
-                    blocks = int(vtoc_info.get("last_block_pointer").get("block"))
+                    tracks = int(vtoc_info.get(
+                        "last_block_pointer").get("track"))
+                    blocks = int(vtoc_info.get(
+                        "last_block_pointer").get("block"))
                     blksize = int(vtoc_info.get("block_size"))
                     bytes_per_trk = 56664
                     alloc_size = (tracks * bytes_per_trk) + (blocks * blksize)
@@ -1532,7 +1543,8 @@ def run_module(module, arg_def):
     except ValueError as err:
         # Bypass BetterArgParser when src is of the form 'SOME.DATA.SET(*)'
         if not is_member_wildcard(module.params["src"]):
-            module.fail_json(msg="Parameter verification failed", stderr=str(err))
+            module.fail_json(
+                msg="Parameter verification failed", stderr=str(err))
     # ********************************************************************
     # Initialize module variables
     # ********************************************************************
@@ -1598,7 +1610,8 @@ def run_module(module, arg_def):
             dest_du = data_set.DataSetUtils(dest_name)
             dest_exists = dest_du.exists()
             if copy_member:
-                dest_exists = dest_exists and dest_du.member_exists(dest_member)
+                dest_exists = dest_exists and dest_du.member_exists(
+                    dest_member)
             dest_ds_type = dest_du.ds_type()
         if temp_path or "/" in src:
             src_ds_type = "USS"
@@ -1663,7 +1676,8 @@ def run_module(module, arg_def):
                 or (src and os.path.isdir(src) and is_mvs_dest)
             ):
                 dest_ds_type = "PDSE"
-                pch = PDSECopyHandler(module, dest_exists, backup_name=backup_name)
+                pch = PDSECopyHandler(
+                    module, dest_exists, backup_name=backup_name)
                 pch.create_pdse(
                     src,
                     dest_name,
@@ -1707,7 +1721,8 @@ def run_module(module, arg_def):
     # ---------------------------------------------------------------------
     if is_uss:
         if dest_exists and not os.access(dest, os.W_OK):
-            copy_handler.fail_json(msg="Destination {0} is not writable".format(dest))
+            copy_handler.fail_json(
+                msg="Destination {0} is not writable".format(dest))
 
         uss_copy_handler = USSCopyHandler(
             module,
